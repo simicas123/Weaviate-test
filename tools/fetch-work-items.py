@@ -4,7 +4,7 @@ from requests.auth import HTTPBasicAuth
 
 ORG = "dev.azure.com/simi0872/" # azure login
 PROJECT = "simi" # project name
-PAT = "8N1poeKaOswP5VFGbrOd8FghScQnYwZCTs0ZbTOwtTwpDSTmQ4BxJQQJ99BGACAAAAApCpDPAAASAZDO2Ty5" # personal access token
+PAT = "" # personal access token
  
 auth = HTTPBasicAuth("", PAT) # getting the HTTP authentication using the PAT
  
@@ -20,11 +20,11 @@ def fetch_work_items():
     work_item_ids = [item["id"] for item in response.json()["workItems"]] # get work item ids from the response
  
     ids_str = ",".join(map(str, work_item_ids))
-    items_url = f"https://{ORG}/_apis/wit/workitems?ids={ids_str}&api-version=6.0" 
+    items_url = f"https://{ORG}/_apis/wit/workitems?ids={ids_str}&api-version=6.0" #
     work_items = requests.get(items_url, auth=auth).json() #get request to fetch work item info
  
-    for item in work_items["value"]:#loops through each returned work item
-        print(item["fields"]["System.Title"]) #prints title of item
+    for item in work_items["value"]:# loops through each returned work item
+        print(item["fields"]["System.Title"]) # prints title of item
  
 if __name__ == "__main__": 
-    fetch_work_items() #runs functionen script is executed
+    fetch_work_items() # runs fuunctionen script is executed
