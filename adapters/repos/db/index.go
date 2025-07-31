@@ -686,6 +686,8 @@ type IndexConfig struct {
 	QueryNestedRefLimit                 int64
 	ResourceUsage                       config.ResourceUsage
 	LazySegmentsDisabled                bool
+	SegmentInfoIntoFileNameEnabled      bool
+	WriteMetadataFilesEnabled           bool
 	MemtablesFlushDirtyAfter            int
 	MemtablesInitialSizeMB              int
 	MemtablesMaxSizeMB                  int
@@ -707,6 +709,8 @@ type IndexConfig struct {
 	TransferInactivityTimeout           time.Duration
 	LSMEnableSegmentsChecksumValidation bool
 	TrackVectorDimensions               bool
+	TrackVectorDimensionsInterval       time.Duration
+	UsageEnabled                        bool
 	ShardLoadLimiter                    ShardLoadLimiter
 
 	HNSWMaxLogSize                               int64
@@ -3112,6 +3116,16 @@ func (i *Index) CalculateUnloadedObjectsMetrics(ctx context.Context, tenantName 
 				count, err := lsmkv.ReadCountNetAdditionsFile(path)
 				if err != nil {
 					i.logger.WithField("path", path).WithError(err).Warn("failed to read .cna file")
+					return err
+				}
+				totalObjectCount += count
+			}
+
+			// Look for .metadata files (bloom filters + count net additions)
+			if strings.HasSuffix(info.Name(), lsmkv.MetadataFileSuffix) {
+				count, err := lsmkv.ReadObjectCountFromMetadataFile(path)
+				if err != nil {
+					i.logger.WithField("path", path).WithError(err).Warn("failed to read .metadata file")
 					return err
 				}
 				totalObjectCount += count
