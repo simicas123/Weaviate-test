@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 from sanitise_text import sanitize_text  # Import the sanitise function
 import time
 from requests.exceptions import RequestException, ConnectionError
+import base64
+import re
+import html
 
 os.environ["NO_PROXY"] = "localhost,127.0.0.1"
 
@@ -46,6 +49,55 @@ def request_with_retries(method, url, retries=2, delay=2, **kwargs):
             time.sleep(delay)
 
 all_tickets = [] # list to hold tickets
+
+# Helper to extract image URL
+def extract_all_image_urls(text):
+    # Match all <img src="..."> with possible HTML tailings
+    img_tag_matches = re.findall(
+        r'<img[^>]+src=["\'](https?://[^"\'>]+)',  # stop at first quote or >
+        text,
+        re.IGNORECASE
+    )
+    
+    # Match raw image URLs in plaintext
+    raw_url_matches = re.findall(
+        r'(https?://\S+\.(?:png|jpg|jpeg|gif|bmp)(?:\?\S*)?)',  # Allow query strings
+        text,
+        re.IGNORECASE
+    )
+
+    # Combine, decode, and clean URLs
+    all_urls = img_tag_matches + raw_url_matches
+    cleaned_urls = []
+
+    for url in all_urls:
+        # Unescape HTML entities like &amp;
+        url = html.unescape(url.strip())
+
+        # Remove any trailing HTML or unsafe characters
+        url = re.sub(r'["\'<>\\]+$', '', url)
+
+        cleaned_urls.append(url)
+
+    return list(set(cleaned_urls))  # Remove duplicates
+
+
+# Fetch image and convert to base64
+def fetch_image_base64_from_url(image_url):
+    try:
+        print(f"[Downloading image from]: {image_url}")
+        img_response = requests.get(image_url, auth=auth)  # Add auth here!
+        if img_response.status_code == 200:
+            encoded = base64.b64encode(img_response.content).decode('utf-8')
+            print(f"[✓] Encoded image base64 length: {len(encoded)}")
+            return encoded
+        else:
+            print(f"[✗] Failed to fetch image from {image_url} - Status Code: {img_response.status_code}")
+            return None
+    except Exception as e:
+        print(f"[✗] Error fetching image: {e}")
+        return None
+
 
 # Function to fetch closed work items
 def fetch_work_items():
@@ -103,10 +155,20 @@ def fetch_work_item_details(work_item_id):
         root_cause_reason = work_item_data['fields'].get('Workpro.RootCauseReason', 'N/A')
         how_fixed = work_item_data['fields'].get('Workpro.HowFixed', 'N/A')
         response_due_date = work_item_data['fields'].get('Workpro.ResponseDueDate', 'N/A')
+        iteration = work_item_data['fields'].get('Workpro.Iteration', 'N/A')
+        area = work_item_data['fields'].get('Workpro.Area', 'N/A')
 
         # Sanitise the description and internal comments fields
+        '''Do we need to sanitise twice? We already sanitise in proces_and_upload.py'''
         sanitized_description = sanitize_text(description)
         sanitized_internal_comments = sanitize_text(internal_comments)
+
+        # Try to extract and fetch image from description or internal comments
+        image_urls = extract_all_image_urls(description) + extract_all_image_urls(internal_comments)
+        print(f"[Image URLs] Found for {work_item_id}: {image_urls}")
+        images_base64 = [fetch_image_base64_from_url(url) for url in image_urls if url]
+        images_base64 = [img for img in images_base64 if img]  # Remove None values
+        print(f"[Ticket Images] {work_item_id} -> {len(images_base64)} image(s) encoded.")
 
         # store in fields
         ticket = {
@@ -119,6 +181,9 @@ def fetch_work_item_details(work_item_id):
             "root_cause_reason": root_cause_reason,
             "how_fixed": how_fixed,
             "response_due_date": response_due_date,
+            "area": area,
+            "iteration": iteration,
+            "images": images_base64
         }
 
         return ticket

@@ -41,7 +41,7 @@ if __name__ == "__main__":
         print("[✗] Could not fetch the ticket.")
         exit()
  
-    # Prepare and embed the ticket ||text
+    # Prepare and embed the ticket
     title = raw_ticket['fields'].get('System.Title', 'N/A')
     description = raw_ticket['fields'].get('System.Description', 'N/A')
     internal_comments = raw_ticket['fields'].get('Workpro.InternalComments', 'N/A')
@@ -51,12 +51,41 @@ if __name__ == "__main__":
     how_fixed = raw_ticket['fields'].get('Workpro.HowFixed', 'N/A')
     response_due_date = raw_ticket['fields'].get('Workpro.ResponseDueDate', 'N/A')
 
+    # Emphasise less or more important fields
+    important_fields = f"""
+    [Important] Description: {description}
+    [Important] Root Cause: {root_cause}
+    [Important] Root Cause Reason: {root_cause_reason}
+    [Important] How Fixed: {how_fixed}
+    """
+
+    less_important_fields = f"""
+    [LessImportant] Title: {title}
+    [LessImportant] Internal Comments: {internal_comments}
+    [LessImportant] Investigation Outcome: {investigation_outcome}
+    [LessImportant] Response Due Date: {response_due_date}
+    """
+
     full_text = f"{title} - {description} - {internal_comments} - {investigation_outcome} - {root_cause} - {root_cause_reason} - {how_fixed} - {response_due_date}"
     
     clean_text = sanitize_text(full_text)
-    embedding = embed(clean_text)
+    embedding = embed(clean_text) # EMBEDDING
+
+    # Ask user how many similar tickets they want returned
+    num_tickets = 5        
+    while True:
+        try:
+            num_tickets = int(input("How many similar tickets to retrieve? (5, 10, or 20): "))
+            if num_tickets in [5, 10, 20]:
+                break
+            else:
+                print("Please enter a valid number: 5, 10, or 20.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+
     # Find similar tickets
-    similar_tickets = get_similar_ticket(embedding, work_item_id)
+    similar_tickets = get_similar_ticket(embedding, work_item_id, top_k=num_tickets)
  
     # Print results
     print(f"\n[✓] Top similar tickets to {work_item_id}:")
@@ -64,4 +93,11 @@ if __name__ == "__main__":
         print(f"\n→ Match #{idx}")
         print(f"  ID: {ticket['work_item_id']}")
         print(f"  Title: {ticket['title']}")
-        print(f"  Text Preview: {ticket['text'][:200]}...")
+        print(f"  Text Preview: {ticket['text']}...")
+        print(f"  Similarity Score: {ticket['similarity_score']:.4f}")
+        if ticket['images']:
+            print(f"  Number of images: {len(ticket['images'])}")
+            for idx, img in enumerate(ticket['images']):
+                print(f"Image #{idx + 1} Base64 snippet: {img[:60]}...") # Limit image print to 60 chars
+        else:
+            print("No images available for this ticket.")
