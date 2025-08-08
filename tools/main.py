@@ -41,7 +41,7 @@ if __name__ == "__main__":
         print("[✗] Could not fetch the ticket.")
         exit()
  
-    # Prepare and embed the ticket
+    # Prepare and embed the ticket (THIS IS FOR THE NEW TICKET)
     title = raw_ticket['fields'].get('System.Title', 'N/A')
     description = raw_ticket['fields'].get('System.Description', 'N/A')
     internal_comments = raw_ticket['fields'].get('Workpro.InternalComments', 'N/A')
@@ -50,23 +50,25 @@ if __name__ == "__main__":
     root_cause_reason = raw_ticket['fields'].get('Workpro.RootCauseReason', 'N/A')
     how_fixed = raw_ticket['fields'].get('Workpro.HowFixed', 'N/A')
     response_due_date = raw_ticket['fields'].get('Workpro.ResponseDueDate', 'N/A')
+    area = raw_ticket['fields'].get('System.AreaPath', 'N/A')
 
     # Emphasise less or more important fields
     important_fields = f"""
-    [Important] Description: {description}
+    [Important] Area: {area}
     [Important] Root Cause: {root_cause}
     [Important] Root Cause Reason: {root_cause_reason}
     [Important] How Fixed: {how_fixed}
+    [Important] Description: {description}
+    [Important] Title: {title}
     """
 
     less_important_fields = f"""
-    [LessImportant] Title: {title}
     [LessImportant] Internal Comments: {internal_comments}
     [LessImportant] Investigation Outcome: {investigation_outcome}
     [LessImportant] Response Due Date: {response_due_date}
     """
 
-    full_text = f"{title} - {description} - {internal_comments} - {investigation_outcome} - {root_cause} - {root_cause_reason} - {how_fixed} - {response_due_date}"
+    full_text = f"{important_fields}\n{important_fields}\n{less_important_fields}"
     
     clean_text = sanitize_text(full_text)
     embedding = embed(clean_text) # EMBEDDING

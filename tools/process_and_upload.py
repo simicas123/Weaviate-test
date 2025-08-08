@@ -26,8 +26,6 @@ def process():
 
         responseDueDate = item["response_due_date"]
 
-        iteration = item["iteration"]
-
         area = item["area"]
 
         images = item.get("images", [])
@@ -46,16 +44,15 @@ def process():
 
         # Make some fields more or less important
         important_fields = f"""
-        [Important] Iteration: {iteration}
         [Important] Area: {area}
-        [Important] Description: {desc}
         [Important] Root Cause: {rootCause}
         [Important] Root Cause Reason: {rootCauseReason}
         [Important] How Fixed: {howFixed}
+        [Important] Description: {desc}
+        [Important] Title: {title}
         """
 
         less_important_fields = f"""
-        [Important] Title: {title}
         [LessImportant] Internal Comments: {internalCmts}
         [LessImportant] Investigation Outcome: {investigationOutcome}
         [LessImportant] Response Due Date: {responseDueDate}

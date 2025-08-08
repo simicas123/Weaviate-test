@@ -155,8 +155,7 @@ def fetch_work_item_details(work_item_id):
         root_cause_reason = work_item_data['fields'].get('Workpro.RootCauseReason', 'N/A')
         how_fixed = work_item_data['fields'].get('Workpro.HowFixed', 'N/A')
         response_due_date = work_item_data['fields'].get('Workpro.ResponseDueDate', 'N/A')
-        iteration = work_item_data['fields'].get('Workpro.Iteration', 'N/A')
-        area = work_item_data['fields'].get('Workpro.Area', 'N/A')
+        area = work_item_data['fields'].get('System.AreaPath', 'N/A')
 
         # Sanitise the description and internal comments fields
         '''Do we need to sanitise twice? We already sanitise in proces_and_upload.py'''
@@ -182,7 +181,6 @@ def fetch_work_item_details(work_item_id):
             "how_fixed": how_fixed,
             "response_due_date": response_due_date,
             "area": area,
-            "iteration": iteration,
             "images": images_base64
         }
 

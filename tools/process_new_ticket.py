@@ -34,6 +34,25 @@ def process_new_ticket(raw_ticket):
     root_cause_reason = sanitize_text(raw_ticket['fields'].get('Workpro.RootCauseReason', 'N/A'))
     how_fixed = sanitize_text(raw_ticket['fields'].get('Workpro.HowFixed', 'N/A'))
     response_due_date = sanitize_text(raw_ticket['fields'].get('Workpro.ResponseDueDate', 'N/A'))
+    area = raw_ticket['fields'].get('System.AreaPath', 'N/A')
+
+    # Make some fields more or less important
+    important_fields = f"""
+    [Important] Area: {area}
+    [Important] Root Cause: {root_cause}
+    [Important] Root Cause Reason: {root_cause_reason}
+    [Important] How Fixed: {how_fixed}
+    [Important] Description: {description}
+    [Important] Title: {title}
+    """
+
+    less_important_fields = f"""
+    [LessImportant] Internal Comments: {internal_comments}
+    [LessImportant] Investigation Outcome: {investigation_outcome}
+    [LessImportant] Response Due Date: {response_due_date}
+    """
+    
+    full_text = f"{important_fields}\n{important_fields}\n{less_important_fields}" # Weight certain fields as being more important than others
 
     full_text = f"{title} - {description} - {internal_comments} - {investigation_outcome} - {root_cause} - {root_cause_reason} - {how_fixed} - {response_due_date}"
     embedding = embed(full_text)
